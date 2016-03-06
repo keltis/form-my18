@@ -1021,6 +1021,6 @@ foreach ($breakfast_complex as $complex) {
 <?php
 } else {?>
 <div class="info"><p>Заказ питания в настоящее время не производится. <br>Заказ доступен с <b>вечера вторника</b> до <b>полудня пятницы</b>.</p></div>
-
+1
 <?php }
 ?>
