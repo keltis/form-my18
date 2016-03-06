@@ -4,6 +4,118 @@ include_once ('plugins/settings.php');
 include_once ('function.php');
 
 
+
+/* 
+Начало обработки формы.
+*/
+if (isset($_POST['go'])) {
+    //print_r($_POST);
+    $breakfastData = array();
+    $prepareData = array();
+    for ($i=1; $i < 7; $i++) {
+        // BREAKFAST
+
+        if(isset($_POST['b_id_foodtake_'.$i])){
+            $breakfastData[$i]['config']['id_food_intake'] = $_POST['b_id_foodtake_'.$i];
+        }
+        if(isset($_POST['b_id_complex_'.$i])){
+            $breakfastData[$i]['config']['id_complex'] = $_POST['b_id_complex_'.$i];
+        }
+        if(isset($_POST['date_'.$i])){
+            $breakfastData[$i]['config']['date'] = $_POST['date_'.$i];
+        }
+        if((isset($_POST['b_id_complex_'.$i]))and(isset($_POST['breakfast_day_'.$i]))){
+            $breakfastData[$i]['config']['status'] = $_POST['breakfast_day_'.$i];
+        } elseif(isset($_POST['b_id_complex_'.$i])) {
+            $breakfastData[$i]['config']['status'] = 'off';
+        }
+
+        // CONFIG
+        if(isset($_POST['id_foodtake_'.$i])){
+            $prepareData[$i]['config']['id_food_intake'] = $_POST['id_foodtake_'.$i];
+        }
+        if(isset($_POST['id_complex_'.$i])){
+            $prepareData[$i]['config']['id_complex'] = $_POST['id_complex_'.$i];
+        }
+        if(isset($_POST['date_'.$i])){
+            $prepareData[$i]['config']['date'] = $_POST['date_'.$i];
+        }
+        // ITEMS
+        if((isset($_POST['cold_dish_day_'.$i])) and ((int)$_POST['cold_dish_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['cold_dish_day_'.$i];
+        }
+        if((isset($_POST['entrees_day_'.$i])) && ((int)$_POST['entrees_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['entrees_day_'.$i];
+        }
+        if((isset($_POST['second_dish_day_'.$i])) and ((int)$_POST['second_dish_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['second_dish_day_'.$i];
+        }
+        if((isset($_POST['garnish_day_'.$i])) and ((int)$_POST['garnish_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['garnish_day_'.$i];
+        }
+        if((isset($_POST['second_dish_without_garnish_day_'.$i])) and ((int)$_POST['second_dish_without_garnish_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['second_dish_without_garnish_day_'.$i];
+        }
+        if((isset($_POST['bakery_day_'.$i])) and ((int)$_POST['bakery_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['bakery_day_'.$i];
+        }
+        if((isset($_POST['confectionery_day_'.$i])) and ((int)$_POST['confectionery_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['confectionery_day_'.$i];
+        }
+        if((isset($_POST['drinks_day_'.$i])) and ((int)$_POST['drinks_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['drinks_day_'.$i];
+        }
+        if((isset($_POST['fruit_day_'.$i])) and ((int)$_POST['fruit_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['fruit_day_'.$i];
+        }
+        if((isset($_POST['bread_day_'.$i])) and ((int)$_POST['bread_day_'.$i] > 0)){
+            $prepareData[$i]['item'][] = $_POST['bread_day_'.$i];
+        }
+    }
+
+    $order = '<?xml version="1.0" encoding="utf-8"?>
+ <order>';
+ foreach ($breakfastData as  $day) {
+     if($day['config']['status'] == 'on')
+     {
+        $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="'.$day['config']['id_complex'].'">';
+            $order .= '</item>';
+     } else {
+        $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="0">';
+            $order .= '</item>';
+     }
+ }
+    foreach ($prepareData as $day) {
+        if(isset($day['item'])){
+            $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="'.$day['config']['id_complex'].'">';
+            foreach ($day['item'] as $item) {
+                $order .= '<subitem id="'.$item.'" qty="1"/>';
+            }
+        $order .= '</item>';
+        } else {
+            $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="0">';
+            $order .= '</item>';
+        }
+    }
+
+    
+ $order .= '</order>';
+    //echo $order;
+    $order = base64_encode($order);
+    $order = efapi("http://10.129.3.253:9870/dh_order?uid=$card_num&password=123456&order=".$order); 
+    $ore = simplexml_load_string($order);
+
+    if ($ore->result=='ok') 
+    {
+        Echo '<div class="success"><p>Ваш заказ <b>принят</b></p></div>';
+    } else {
+        echo '<div class="error"><p>Ваш заказ <b>не принят</b></p></div>';
+    }
+}
+/*
+Конец обработки формы.
+*/
+
 $ef = efapi("/dh_complexes?uid=$card_num&password=$api_pass"); // запрашиваем меню
 $file = $ef;
 $xml = simplexml_load_string($file);
@@ -95,24 +207,22 @@ $countCategories = 0;
                 max-width: 20%; /* Ширина списка в пикселах */
             }
             .breakfast {
-    background: whitesmoke;
-    border-radius: 3px;
-    padding: 20px 5px;
-    margin-top: 15px;
+                background: whitesmoke;
+                border-radius: 3px;
+                padding: 20px 5px;
+                margin-top: 15px;
             }
             .b_header {
-                        position: relative;
-    top: -15px;
-    padding: 3px;
-    border-bottom: 1px solid grey;
+                position: relative;
+                top: -15px;
+                padding: 3px;
+                border-bottom: 1px solid grey;
             }
             .b_header_check{
                 position: relative;
-    /* right: 0px; */
-    float: right;
-    /* border-left: 1px solid grey; */
-    padding: 0px 0 0px 5px;
-    margin: -2px;
+                float: right;
+                padding: 0px 0 0px 5px;
+                margin: -2px;
             }
             .day_1 {background: #cdebf0;}
             .day_2 {background: #ccddff;}
@@ -131,6 +241,27 @@ $countCategories = 0;
             }
             td {
                 max-width: 200px;
+            }
+            .info, .success, .warning, .error, .validation {
+                border: 2px solid;
+                border-radius: 3px;
+                margin: 10px auto;
+                padding: 15px 10px 15px 0px;
+                width: 97%;
+                text-align: center;
+                font: 16px Tahoma;
+            }
+            .info {
+                color: #00529B;
+                background-color: #BDE5F8;
+            }
+            .success {
+                color: #4F8A10;
+                background-color: #DFF2BF;
+            }
+            .error {
+                color: #D8000C;
+                background-color: #FFBABA;
             }
         </style>
         <script>
@@ -351,6 +482,11 @@ foreach ($breakfast_complex as $complex) {
 
     </head>
     <body>
+    
+
+    <?php if (count($extra_complex) > 0) {?>
+        
+    
         <form action="" method="POST" id="form-complex" onsubmit="return checkAll()">
             <?php foreach ($extra_complex as $complex) {
                 $countCategories = 0;
@@ -883,109 +1019,8 @@ foreach ($breakfast_complex as $complex) {
             
         </form>
 <?php
-if (isset($_POST['go'])) {
-    //print_r($_POST);
-    $breakfastData = array();
-    $prepareData = array();
-    for ($i=1; $i < 7; $i++) {
-        // BREAKFAST
+} else {?>
+<div class="info"><p>Заказ питания в настоящее время не производится. <br>Заказ доступен с <b>вечера вторника</b> до <b>полудня пятницы</b>.</p></div>
 
-        if(isset($_POST['b_id_foodtake_'.$i])){
-            $breakfastData[$i]['config']['id_food_intake'] = $_POST['b_id_foodtake_'.$i];
-        }
-        if(isset($_POST['b_id_complex_'.$i])){
-            $breakfastData[$i]['config']['id_complex'] = $_POST['b_id_complex_'.$i];
-        }
-        if(isset($_POST['date_'.$i])){
-            $breakfastData[$i]['config']['date'] = $_POST['date_'.$i];
-        }
-        if((isset($_POST['b_id_complex_'.$i]))and(isset($_POST['breakfast_day_'.$i]))){
-            $breakfastData[$i]['config']['status'] = $_POST['breakfast_day_'.$i];
-        } elseif(isset($_POST['b_id_complex_'.$i])) {
-            $breakfastData[$i]['config']['status'] = 'off';
-        }
-
-        // CONFIG
-        if(isset($_POST['id_foodtake_'.$i])){
-            $prepareData[$i]['config']['id_food_intake'] = $_POST['id_foodtake_'.$i];
-        }
-        if(isset($_POST['id_complex_'.$i])){
-            $prepareData[$i]['config']['id_complex'] = $_POST['id_complex_'.$i];
-        }
-        if(isset($_POST['date_'.$i])){
-            $prepareData[$i]['config']['date'] = $_POST['date_'.$i];
-        }
-        // ITEMS
-        if((isset($_POST['cold_dish_day_'.$i])) and ((int)$_POST['cold_dish_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['cold_dish_day_'.$i];
-        }
-        if((isset($_POST['entrees_day_'.$i])) && ((int)$_POST['entrees_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['entrees_day_'.$i];
-        }
-        if((isset($_POST['second_dish_day_'.$i])) and ((int)$_POST['second_dish_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['second_dish_day_'.$i];
-        }
-        if((isset($_POST['garnish_day_'.$i])) and ((int)$_POST['garnish_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['garnish_day_'.$i];
-        }
-        if((isset($_POST['second_dish_without_garnish_day_'.$i])) and ((int)$_POST['second_dish_without_garnish_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['second_dish_without_garnish_day_'.$i];
-        }
-        if((isset($_POST['bakery_day_'.$i])) and ((int)$_POST['bakery_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['bakery_day_'.$i];
-        }
-        if((isset($_POST['confectionery_day_'.$i])) and ((int)$_POST['confectionery_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['confectionery_day_'.$i];
-        }
-        if((isset($_POST['drinks_day_'.$i])) and ((int)$_POST['drinks_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['drinks_day_'.$i];
-        }
-        if((isset($_POST['fruit_day_'.$i])) and ((int)$_POST['fruit_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['fruit_day_'.$i];
-        }
-        if((isset($_POST['bread_day_'.$i])) and ((int)$_POST['bread_day_'.$i] > 0)){
-            $prepareData[$i]['item'][] = $_POST['bread_day_'.$i];
-        }
-    }
-//print_r($breakfastData);
-//print_r($prepareData);
-    $order = '<?xml version="1.0" encoding="utf-8"?>
- <order>';
- foreach ($breakfastData as  $day) {
-     if($day['config']['status'] == 'on')
-     {
-        $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="'.$day['config']['id_complex'].'">';
-            $order .= '</item>';
-     } else {
-        $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="0">';
-            $order .= '</item>';
-     }
- }
-    foreach ($prepareData as $day) {
-        if(isset($day['item'])){
-            $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="'.$day['config']['id_complex'].'">';
-            foreach ($day['item'] as $item) {
-                $order .= '<subitem id="'.$item.'" qty="1"/>';
-            }
-        $order .= '</item>';
-        } else {
-            $order .= '<item date="'.$day['config']['date'].'" id_food_intake="'.$day['config']['id_food_intake'].'" id_complex="0">';
-            $order .= '</item>';
-        }
-    }
-
-    
- $order .= '</order>';
-    //echo $order;
-    $order = base64_encode($order);
-    $order = efapi("http://10.129.3.253:9870/dh_order?uid=$card_num&password=123456&order=".$order); 
-    $ore = simplexml_load_string($order);
-
-    if ($ore->result=='ok') 
-    {
-        Echo 'Ваш заказ принят.';
-    } else {
-        echo 'Ваш заказ не принят.';
-    }
-}
+<?php }
 ?>
