@@ -102,14 +102,19 @@ if (isset($_POST['go'])) {
  $order .= '</order>';
     //echo $order;
     $order = base64_encode($order);
-    $order = efapi("http://10.129.3.253:9870/dh_order?uid=$card_num&password=123456&order=".$order); 
+    $order = efapi("/dh_order?uid=$card_num&password=123456&order=".$order); 
     $ore = simplexml_load_string($order);
 
     if ($ore->result=='ok') 
     {
         Echo '<div class="success"><p>Ваш заказ <b>принят</b></p></div>';
     } else {
-        echo '<div class="error"><p>Ваш заказ <b>не принят</b></p></div>';
+        if ($ore->description == 'Insufficient funds'){
+            echo '<div class="error"><p>Ваш заказ <b>не принят</b><br>На вашем счету недостаточно денег.</p></div>';
+        } else {
+            echo '<div class="error"><p>Ваш заказ <b>не принят</b><br>Неизвестная ошибка, обратитесь в службу ИКТ.</p></div>';
+        }
+        
     }
 }
 /*
@@ -354,21 +359,26 @@ foreach ($breakfast_complex as $complex) {
     resumAllWeek();
                 $('select').each(function (i, elem) {
                     qtyId = "#qty_" + this.id;
+                    clickId = this.id;
                     if ($(qtyId).val() > 0)
                     {
-                        clickId = this.id;
                         qtyId = "#qty_" + clickId;
                         dayId = Number(clickId.match(/\d+/));
                         dishSelected = $("#" + clickId + " option:selected").text();
                         idDish = $("#" + clickId + " option:selected").val();
                         costDish = costsDish[idDish];
                         countDish = $(qtyId).val();
+
                         oldCostDish[clickId] = countDish * costDish;
                         if ($("li").is("#ordered_" + clickId)) {
                             $("#ordered_" + clickId).text(dishSelected + ' x ' + countDish + ' = ' + countDish * costDish + ' руб.');
                         } else {
                             $("#order_day_" + dayId).append('<li id="ordered_' + clickId + '" >' + dishSelected + ' x ' + countDish + ' = ' + countDish * costDish + ' руб.</li>');
                         }
+                    } else {
+                        dayId = Number(clickId.match(/\d+/));
+                        $("#confectionery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
+                        $("#bakery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
                     }
                 });
                 $('input:checkbox').each(function (i, elem) {
@@ -445,12 +455,22 @@ foreach ($breakfast_complex as $complex) {
                             $("#garnish_day_" + dayId).prop('disabled', false).trigger('refresh');
                             $("#garnish_day_" + dayId + " :nth-child(2)").attr('selected', 'true').trigger('refresh');
                             $("#garnish_day_" + dayId).change();
-                        } else {
+                        } 
                         
-            }
-
-
                     }
+
+                        if (($("#dont_eat_entrees_day_" + dayId).text() !== $("#entrees_day_" + dayId + " option:selected").text()) && ($("#dont_eat_second_dish_day_" + dayId).text() !== $("#second_dish_day_" + dayId + " option:selected").text())) {
+                                $("#confectionery_day_" + dayId).attr("disabled",false).trigger('refresh');
+                                $("#bakery_day_" + dayId).attr("disabled",false).trigger('refresh');
+                        } else {
+                                $("#confectionery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
+                                $("#dont_eat_confectionery_day_" + dayId).attr('selected', 'true').trigger('refresh');
+                                $("#bakery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
+                                $("#dont_eat_bakery_day_" + dayId).attr('selected', 'true').trigger('refresh');
+                    }
+
+
+                    
 
                 });
 
@@ -483,7 +503,7 @@ foreach ($breakfast_complex as $complex) {
     </head>
     <body>
     
-
+    <?php //print_r($extra_complex); ?>
     <?php if (count($extra_complex) > 0) {?>
         
     
@@ -1021,6 +1041,6 @@ foreach ($breakfast_complex as $complex) {
 <?php
 } else {?>
 <div class="info"><p>Заказ питания в настоящее время не производится. <br>Заказ доступен с <b>вечера вторника</b> до <b>полудня пятницы</b>.</p></div>
-1
+
 <?php }
 ?>
