@@ -102,17 +102,23 @@ if (isset($_POST['go'])) {
  $order .= '</order>';
     //echo $order;
     $order = base64_encode($order);
-    $order = efapi("/dh_order?uid=$card_num&password=123456&order=".$order); 
-    $ore = simplexml_load_string($order);
-
+    $orde = efapi("/dh_order?uid=$card_num&password=123456&order=".$order); 
+    $ore = simplexml_load_string($orde);
+    $dates = date("Y-m-d H:i:s");
     if ($ore->result=='ok') 
     {
         Echo '<div class="success"><p>Ваш заказ <b>принят</b></p></div>';
+        $db->setQuery("INSERT INTO food_log (event_date, message, parameters, program_point, user_id) VALUES ('".$dates."', 'заказ успешно принят', '".$order."', '".$_SERVER['HTTP_USER_AGENT']."', '".$uid."')");
+        $db->query();
     } else {
         if ($ore->description == 'Insufficient funds'){
             echo '<div class="error"><p>Ваш заказ <b>не принят</b><br>На вашем счету недостаточно денег.</p></div>';
+            $db->setQuery("INSERT INTO food_log (event_date, message, parameters, program_point, user_id) VALUES ('".$dates."', 'заказ не принят: недостаточно денег".$ore->description."', '".$order."', '".$_SERVER['HTTP_USER_AGENT']."', '".$uid."')");
+        $db->query();
         } else {
             echo '<div class="error"><p>Ваш заказ <b>не принят</b><br>Неизвестная ошибка, обратитесь в службу ИКТ.</p></div>';
+            $db->setQuery("INSERT INTO food_log (event_date, message, parameters, program_point, user_id) VALUES ('".$dates."', 'заказ не принят: недостаточно денег".$ore->description."', '".$order."', '".$_SERVER['HTTP_USER_AGENT']."', '".$uid."')");
+        $db->query();
         }
         
     }
@@ -336,7 +342,7 @@ $countCategories = 0;
                 return arr_week_days[day_num];
             }
             $(document).ready(function () {
-
+                document.getElementById('header').style.backgroundImage='url(http://my18.ru/templates/baum_lyceum_new/images/shapki/Sayt_11.jpg)';
                 oldCostDish = new Array();
                 costsDish = new Array();
                 priceBreakfast = new Array();
@@ -459,14 +465,30 @@ foreach ($breakfast_complex as $complex) {
                         
                     }
 
-                        if (($("#dont_eat_entrees_day_" + dayId).text() !== $("#entrees_day_" + dayId + " option:selected").text()) && ($("#dont_eat_second_dish_day_" + dayId).text() !== $("#second_dish_day_" + dayId + " option:selected").text())) {
+                        if (($("#dont_eat_entrees_day_" + dayId).text() !== $("#entrees_day_" + dayId + " option:selected").text()) || ($("#dont_eat_second_dish_day_" + dayId).text() !== $("#second_dish_day_" + dayId + " option:selected").text())) {
                                 $("#confectionery_day_" + dayId).attr("disabled",false).trigger('refresh');
                                 $("#bakery_day_" + dayId).attr("disabled",false).trigger('refresh');
                         } else {
+                            if (oldCostDish["confectionery_day_"+dayId] === undefined)
+                           { 
+                                oldCostDish["confectionery_day_"+dayId] = 0;
+                            }
+                            if (oldCostDish["bakery_day_"+dayId] === undefined)
+                           { 
+                                oldCostDish["bakery_day_"+dayId] = 0;
+                            }
                                 $("#confectionery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
                                 $("#dont_eat_confectionery_day_" + dayId).attr('selected', 'true').trigger('refresh');
+                                 $("#ordered_confectionery_day_" + dayId).remove();
+                                 console.log('пересчет Кондитерские изделия предыдущая цена: '+ oldCostDish["confectionery_day_"+dayId] + ' Новая цена: 0');
+                                 resum(dayId, oldCostDish["confectionery_day_"+dayId], 0);
+                                 oldCostDish["confectionery_day_"+dayId] = 0;
                                 $("#bakery_day_" + dayId).attr("disabled","disabled").trigger('refresh');
                                 $("#dont_eat_bakery_day_" + dayId).attr('selected', 'true').trigger('refresh');
+                                 $("#ordered_bakery_day_" + dayId).remove();
+                                 console.log('пересчет Выпечка предыдущая цена: '+ oldCostDish["bakery_day_"+dayId] + ' Новая цена: 0');
+                                 resum(dayId, oldCostDish["bakery_day_"+dayId], 0);
+                                 oldCostDish["bakery_day_"+dayId] = 0;
                     }
 
 

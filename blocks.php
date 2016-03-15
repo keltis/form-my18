@@ -294,7 +294,7 @@ echo 'Дата последнего заказа:  '.$d_z.'<br/>
 Следующая неделя: ';
 
 if ($dat<$next_week && $dat>$current_first_day)
-	echo '<span style="color: blue;">заказ принят!</span><a class="tooltip_zakaz"><span>'.$parameters.'</span></a><br/>';
+	echo '<span style="color: blue;">заказ принят!</span><br/>';
 else 
 	echo '<span style="color: red;">заказов нет!</span> <br/>';
 	
